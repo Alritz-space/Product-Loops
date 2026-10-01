@@ -1,0 +1,6 @@
+{
+  "name": "Product Loops",
+  "description": "Agent-assisted product-management workspace to gather signals, prioritize opportunities, explore solutions, record decisions, ship slices, and review outcomes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
