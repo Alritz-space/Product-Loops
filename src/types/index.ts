@@ -2,6 +2,8 @@
  * Product Loops Core Data Types
  */
 
+export * from './evals';
+
 export type Role = 'pm' | 'lead' | 'engineer';
 
 export type SignalCategory =

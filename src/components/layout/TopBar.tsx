@@ -16,6 +16,8 @@ import {
   AlertTriangle,
   Info,
   ChevronDown,
+  ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const TopBar: React.FC = () => {
@@ -33,6 +35,8 @@ export const TopBar: React.FC = () => {
     resetWorkspace,
     exportWorkspaceJson,
     importWorkspaceJson,
+    isAiPaused,
+    reviewQueue,
   } = useWorkspace();
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -41,6 +45,7 @@ export const TopBar: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const pendingReviewCount = reviewQueue.filter((r) => r.status === 'Pending').length;
 
   const handleExport = () => {
     const jsonStr = exportWorkspaceJson();
@@ -192,6 +197,31 @@ export const TopBar: React.FC = () => {
             )}
           </button>
         </div>
+
+        {/* Circuit Breaker Kill-Switch Status */}
+        {isAiPaused && (
+          <button
+            onClick={() => setActiveView('evals')}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs animate-pulse shadow-xs transition-all"
+            title="AI Circuit Breaker Active: Automated AI actions paused. Click to review in Evals & Guardrails."
+          >
+            <ShieldAlert className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">AI PAUSED (Circuit Breaker)</span>
+            <span className="md:hidden">PAUSED</span>
+          </button>
+        )}
+
+        {/* Flagged Review Queue pill */}
+        {pendingReviewCount > 0 && !isAiPaused && (
+          <button
+            onClick={() => setActiveView('evals')}
+            className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 text-xs font-medium transition-all"
+            title={`${pendingReviewCount} artifact(s) flagged for human review. Click to open Evals queue.`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+            <span>{pendingReviewCount} Flagged for Review</span>
+          </button>
+        )}
 
         {/* Notifications Popover */}
         <div className="relative">

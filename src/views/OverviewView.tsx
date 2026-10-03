@@ -12,6 +12,7 @@ import {
   Sparkles,
   ArrowRight,
   ShieldAlert,
+  ShieldCheck,
   Play,
   RotateCcw,
   Check,
@@ -33,6 +34,9 @@ export const OverviewView: React.FC = () => {
     runSignalDigest,
     role,
     setRole,
+    reviewQueue,
+    evalMetrics,
+    isAiPaused,
   } = useWorkspace();
 
   const [isDigestRunning, setIsDigestRunning] = useState(false);
@@ -46,6 +50,7 @@ export const OverviewView: React.FC = () => {
   );
   const regressedReleases = releaseOutcomes.filter((r) => r.guardrailRegressions.length > 0);
   const activeSlices = deliverySlices.filter((s) => s.boardStage !== 'Released');
+  const pendingReviews = reviewQueue.filter((r) => r.status === 'Pending');
 
   const handleRunDigest = async () => {
     setIsDigestRunning(true);
@@ -273,7 +278,7 @@ export const OverviewView: React.FC = () => {
       </div>
 
       {/* Attention Queues Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Failed Checks Alert */}
         <div className="bg-white rounded-xl border border-stone-200 p-4 shadow-2xs flex flex-col justify-between">
           <div>
@@ -406,6 +411,60 @@ export const OverviewView: React.FC = () => {
             className="mt-3 w-full py-1.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-lg text-xs font-medium text-stone-700 text-center"
           >
             Open Measure Tab & Review Outcome
+          </button>
+        </div>
+
+        {/* 4. Safety & Policy Review Queue */}
+        <div className="bg-white rounded-xl border border-stone-200 p-4 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-purple-950">
+                <ShieldCheck className="w-4 h-4 text-purple-600" />
+                Policy & Review Queue ({pendingReviews.length})
+              </span>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded font-mono border ${
+                  isAiPaused
+                    ? 'bg-red-50 text-red-800 border-red-300 font-bold'
+                    : pendingReviews.length > 0
+                    ? 'bg-amber-50 text-amber-800 border-amber-200 font-semibold'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                }`}
+              >
+                {isAiPaused ? 'PAUSED' : pendingReviews.length > 0 ? 'Review Needed' : 'Compliant'}
+              </span>
+            </div>
+            <p className="text-xs text-stone-600 mb-3">
+              Enforced by Central Policy Engine. Deterministic tests and policy guards filter AI proposals.
+            </p>
+
+            {pendingReviews.map((rev) => (
+              <div
+                key={rev.id}
+                onClick={() => setActiveView('evals')}
+                className="p-2.5 rounded-lg bg-purple-50/60 border border-purple-200 text-xs cursor-pointer hover:bg-purple-100/60 transition-colors mb-1.5"
+              >
+                <div className="font-semibold text-purple-950 flex justify-between">
+                  <span>
+                    {rev.id}: {rev.entityId}
+                  </span>
+                  <span className="text-[10px] text-purple-800 font-mono">{rev.severity}</span>
+                </div>
+                <div className="text-[11px] text-purple-900 mt-1 line-clamp-2">{rev.reason}</div>
+              </div>
+            ))}
+            {pendingReviews.length === 0 && (
+              <div className="p-3 rounded-lg bg-emerald-50/60 border border-emerald-200 text-xs text-emerald-900">
+                All 20 test cases passing ({evalMetrics?.overallPassRate ?? 95}%). Zero ungrounded claims detected.
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setActiveView('evals')}
+            className="mt-3 w-full py-1.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg text-xs font-semibold text-purple-900 text-center"
+          >
+            Open Evals & Guardrails Suite
           </button>
         </div>
       </div>

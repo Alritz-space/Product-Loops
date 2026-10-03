@@ -452,6 +452,137 @@ Return JSON:
   }
 });
 
+// ==========================================
+// CENTRAL POLICY & EVALS GATEWAY ENDPOINTS
+// ==========================================
+
+// 8. Workflow Transition & Policy Gate Check
+app.post('/api/policy/evaluate-transition', (req, res) => {
+  try {
+    const { action, role, payload, strategyVersion, currentArtifactVersion } = req.body;
+    const violations: any[] = [];
+
+    // Check Human Authorization policies
+    if (action === 'simulate_release') {
+      if (role !== 'engineer') {
+        violations.push({
+          policyId: 'POL-HA-02',
+          severity: 'Critical',
+          enforcement: 'Block',
+          details: 'Simulated release rejected: Action must be signed by an Engineer role.',
+        });
+      }
+      if (payload?.requiredChecksPassed === false || (payload?.openBlockers && payload.openBlockers.length > 0)) {
+        violations.push({
+          policyId: 'POL-WI-02',
+          severity: 'Critical',
+          enforcement: 'Block',
+          details: 'Release blocked: Automated engineering checks failed or open P0/P1 blockers remain.',
+        });
+      }
+    }
+
+    if (action === 'record_human_decision') {
+      if (role !== 'lead') {
+        violations.push({
+          policyId: 'POL-HA-02',
+          severity: 'Critical',
+          enforcement: 'Block',
+          details: 'Decision rejected: Only Product Lead can approve concept shortlist.',
+        });
+      }
+      if (!payload?.rationale || payload.rationale.trim().length < 10) {
+        violations.push({
+          policyId: 'POL-HA-02',
+          severity: 'High',
+          enforcement: 'Block',
+          details: 'Human decision rationale must be at least 10 characters explaining trade-offs.',
+        });
+      }
+    }
+
+    if (action === 'shape_delivery_slice') {
+      if (payload?.decisionStatus !== 'Approved') {
+        violations.push({
+          policyId: 'POL-WI-01',
+          severity: 'Critical',
+          enforcement: 'Block',
+          details: 'Delivery slice generation blocked: Concept has not received human Product Lead approval.',
+        });
+      }
+    }
+
+    if (payload?.strategyVersionUsed && strategyVersion && payload.strategyVersionUsed < strategyVersion) {
+      violations.push({
+        policyId: 'POL-WI-03',
+        severity: 'High',
+        enforcement: 'Block',
+        details: `Artifact evaluated under Strategy v${payload.strategyVersionUsed}, but workspace is currently on Strategy v${strategyVersion}.`,
+      });
+    }
+
+    const allowed = violations.length === 0;
+    res.json({
+      allowed,
+      action,
+      violations,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, allowed: false });
+  }
+});
+
+// 9. Rubric-based Live AI Evaluation
+app.post('/api/evals/rubric-eval', async (req, res) => {
+  try {
+    const { taskType, candidateOutput, expectedBehavior, sourceContext } = req.body;
+    if (!ai) {
+      return res.status(400).json({
+        error: 'Gemini API key is not configured on the server for live rubric evals.',
+        recoverable: true,
+      });
+    }
+
+    const prompt = `You are an independent, blind AI Evaluation Judge auditing candidate output for task: ${taskType}.
+Source Context:
+${JSON.stringify(sourceContext || {})}
+
+Candidate Output:
+${JSON.stringify(candidateOutput || {})}
+
+Expected Behavior Specification:
+${expectedBehavior}
+
+Evaluate strictly against this fixed rubric (scores 1-10):
+1. relevance (does it answer the task without tangential filler)
+2. evidenceGrounded (are all claims backed by the source context, zero hallucinated facts)
+3. strategyAlignment (complies with goals and respects non-goals)
+4. clarityOfUncertainty (clearly labels assumptions and missing data)
+
+Return JSON:
+{
+  "scores": {
+    "relevance": number,
+    "evidenceGrounded": number,
+    "strategyAlignment": number,
+    "clarityOfUncertainty": number
+  },
+  "overallPassed": boolean,
+  "justification": string,
+  "unsupportedClaims": string[]
+}`;
+
+    const evalResult = await callGeminiJson<any>(
+      'You are a rigorous, impartial Evaluation Judge who enforces evidence fidelity and checks for ungrounded claims.',
+      prompt
+    );
+    res.json(evalResult);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to run rubric eval', recoverable: true });
+  }
+});
+
 // Setup Vite middleware in dev or static serving in prod
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {

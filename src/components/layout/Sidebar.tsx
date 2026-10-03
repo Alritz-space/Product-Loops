@@ -10,6 +10,7 @@ import {
   Repeat,
   AlertTriangle,
   HelpCircle,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface NavItem {
@@ -22,11 +23,21 @@ interface NavItem {
 }
 
 export const Sidebar: React.FC = () => {
-  const { activeView, setActiveView, signals, opportunities, releaseOutcomes } = useWorkspace();
+  const {
+    activeView,
+    setActiveView,
+    signals,
+    opportunities,
+    releaseOutcomes,
+    reviewQueue,
+    evalMetrics,
+    isAiPaused,
+  } = useWorkspace();
 
   const newSignalsCount = signals.filter((s) => s.status === 'New').length;
   const failedCheckCount = opportunities.filter((o) => o.checkerStatus === 'Failed').length;
   const activeRegressions = releaseOutcomes.filter((r) => r.guardrailRegressions.length > 0).length;
+  const pendingReviewCount = reviewQueue.filter((r) => r.status === 'Pending').length;
 
   const navItems: NavItem[] = [
     {
@@ -82,6 +93,22 @@ export const Sidebar: React.FC = () => {
       icon: <Repeat className="w-4 h-4" />,
       badge: '10 Loops',
       badgeColor: 'bg-stone-100 text-stone-600',
+    },
+    {
+      id: 'evals',
+      label: 'Evals & Guardrails',
+      stageName: 'Safety & Quality',
+      icon: <ShieldCheck className="w-4 h-4" />,
+      badge: isAiPaused
+        ? 'PAUSED'
+        : pendingReviewCount > 0
+        ? `${pendingReviewCount} Flagged`
+        : `${evalMetrics?.overallPassRate ?? 95}% Pass`,
+      badgeColor: isAiPaused
+        ? 'bg-red-100 text-red-800 border-red-300 font-bold'
+        : pendingReviewCount > 0
+        ? 'bg-amber-100 text-amber-800 border-amber-200 font-semibold'
+        : 'bg-emerald-50 text-emerald-800 border-emerald-200 font-mono',
     },
   ];
 

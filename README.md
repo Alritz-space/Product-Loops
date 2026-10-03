@@ -74,6 +74,25 @@ The app comes pre-seeded with **Flowdesk** (a collaborative workspace for small 
 
 ---
 
+## Evals & Guardrails Framework
+
+Product Loops includes a dedicated evaluation framework and server-side policy engine separating deterministic rules from probabilistic model checks:
+
+- **Centralized Server-Side Policy Engine** (`/api/policy/evaluate-transition`): Validates all AI outputs and protected workflow transitions.
+  - **Human Approval (POL-HA-*)**: AI cannot approve concepts, releases, or outcomes. Decisions require explicit human persona actions, artifact version binding, and written rationale. Material edits invalidate downstream approvals.
+  - **Workflow Integrity (POL-WI-*)**: Blocks delivery without human concept sign-off; blocks releases without passing engineering checks; blocks transitions on stale strategy/concept versions; enforces idempotency against duplicate signals/releases.
+  - **Evidence Integrity (POL-EI-*)**: Verifies source ID existence; audits quotes against source text; checks passage grounding; ensures synthetic personas and demo data remain labeled.
+  - **Tool & Resource Limits (POL-TB-*, POL-RL-*)**: Enforces explicit capability allowlists, rate limits, and output token bounds.
+
+- **Deterministic & Live Rubric Test Suite**:
+  - **20 Specific Test Cases**: Cover prompt injection neutralization, hallucinated citations, quote fidelity, calculation bounds, strategy contradiction, spec drift detection, unauthorized engineering release attempts, and causal overreach.
+  - **Automated Regression Metrics**: Overall pass rate, schema validity rate, citation validity rate, strategy adherence rate, prompt injection resistance, and human gate enforcement rate.
+  - **Candidate vs. Baseline Configuration Comparison**: Compares candidate configuration against baseline across all tests, highlighting regressions before promotion.
+  - **Circuit Breaker / Emergency Kill-Switch**: One-click "Pause AI Actions" halts automated agent execution and falls back to deterministic manual workflows if critical thresholds are breached.
+  - **Human Calibration & Review Queue**: Flags ungrounded or non-compliant proposals for human triage, supporting manual overrides, calibrated rubric grading, and sanitized JSON audit exports.
+
+---
+
 ## Getting Started
 
 ### Prerequisites

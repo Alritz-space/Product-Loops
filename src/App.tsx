@@ -10,6 +10,7 @@ import { SolutionLabView } from './views/SolutionLabView';
 import { DecisionsView } from './views/DecisionsView';
 import { DeliveryOutcomesView } from './views/DeliveryOutcomesView';
 import { LoopsStrategyView } from './views/LoopsStrategyView';
+import { EvalsView } from './views/EvalsView';
 import {
   LayoutDashboard,
   Radio,
@@ -18,6 +19,7 @@ import {
   Scale,
   Rocket,
   Repeat,
+  ShieldCheck,
 } from 'lucide-react';
 
 const MainContent: React.FC = () => {
@@ -31,6 +33,7 @@ const MainContent: React.FC = () => {
     { id: 'decisions', label: 'Decide', icon: <Scale className="w-4 h-4" /> },
     { id: 'delivery', label: 'Deliver', icon: <Rocket className="w-4 h-4" /> },
     { id: 'loops', label: 'Loops', icon: <Repeat className="w-4 h-4" /> },
+    { id: 'evals', label: 'Evals & Guardrails', icon: <ShieldCheck className="w-4 h-4" /> },
   ];
 
   return (
@@ -70,6 +73,7 @@ const MainContent: React.FC = () => {
           {activeView === 'decisions' && <DecisionsView />}
           {activeView === 'delivery' && <DeliveryOutcomesView />}
           {activeView === 'loops' && <LoopsStrategyView />}
+          {activeView === 'evals' && <EvalsView />}
         </main>
       </div>
 
